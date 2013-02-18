@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Boot Tour Example</title>
+    <link href="http://netdna.bootstrapcdn.com/twitter-bootstrap/2.3.0/css/bootstrap-combined.min.css" rel="stylesheet">
+    <link href="boot-tour.css" rel="stylesheet">
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script src="http://netdna.bootstrapcdn.com/twitter-bootstrap/2.3.0/js/bootstrap.min.js"></script>
+    <script src="boot-tour.js"></script>
+
+    <script>
+      $(window).load(function() {
+        $('#boot-tour').boottour({skipbutton: false});
+        $('#boot-tour').boottour('start');
+      });
+    </script>
+  </head>
+  <body>
+    <div style="text-align: center; margin: 40px auto;">
+      <button class="btn btn-large" onclick="$('#boot-tour').boottour('start');">Launch Tour!</button>
+      <button class="btn btn-large" onclick="$('#boot-tour').remove();">Remove Tour</button>
+      <button class="btn btn-large" onclick="$('#boot-tour').boottour('next');">Next Step</button>
+      <button class="btn btn-large" onclick="$('#boot-tour').boottour('previous');">Previous Step</button>
+    </div>
+
+    <div style="text-align: center; width: 400px; margin: 0 auto;">
+      <span id="target-1" style="float: left;">Target 1</span>
+      <span id="target-3" style="float: right;">Target 3</span>
+      <span id="target-2" style="float: none;">Target 2</span>
+    </div>
+
+    <ol id="boot-tour" style="display: none;" data-allowrestart="true">
+      <li data-target="#target-1" data-title="Step 1">This is step one</li>
+      <li data-target="#target-2" data-title="Step 2" data-placement="bottom" data-spotlight="true">This is step two</li>
+      <li data-target="#target-3" data-title="Step 3" data-placement="left" data-spotlight="true" data-spotlightradius="200">This is step three</li>
+    </ol>
+  </body>
+</html>

@@ -1,0 +1,16 @@
+.boot-tour-spotlight {
+  position: fixed;
+  z-index: 1009;
+  pointer-events: none; /* doesn't work with IE, see http://stackoverflow.com/questions/4414188/how-to-make-links-behind-a-div-with-a-superior-z-index-value-clickable */
+
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 1.0);
+  -webkit-box-shadow: 0 0 0 9999px rgba(0, 0, 0, 1.0);
+  -moz-box-shadow: 0 0 0 9999px rgba(0, 0, 0, 1.0);
+}
+.boot-tour-spotlight-inner {
+  margin: -2px 0 0 -2px;
+
+  box-shadow: inset 0 0 40px 100px rgba(0, 0, 0, 1.0), inset 0 0 40px 100px rgba(0, 0, 0, 1.0);
+  -webkit-box-shadow: inset 0 0 40px 100px rgba(0, 0, 0, 1.0), inset 0 0 40px 100px rgba(0, 0, 0, 1.0);
+  -moz-box-shadow: inset 0 0 40px 100px rgba(0, 0, 0, 1.0), inset 0 0 40px 100px rgba(0, 0, 0, 1.0);
+}
