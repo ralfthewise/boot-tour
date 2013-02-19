@@ -107,16 +107,24 @@
       this.$stepTarget.popover('show');
       $('.boot-tour-skip-btn').on('click', this.finishTour);
       $('.boot-tour-next-btn').on('click', this.runNextStep);
+      if (this.stepOptions.timer > 0) {
+        this.timeout = setTimeout(this.runNextStep, this.stepOptions.timer);
+      }
       return this.stepOpen = true;
     };
 
     BootTour.prototype._finishCurrentStep = function() {
       var _ref;
       if (this.stepOpen) {
+        if (this.timeout != null) {
+          clearTimeout(this.timeout);
+          delete this.timeout;
+        }
         this.stepOpen = false;
         $('.boot-tour-next-btn').off('click', this.runNextStep);
         $('.boot-tour-skip-btn').off('click', this.finishTour);
         this.$stepTarget.popover('hide');
+        this.$stepTarget.popover('destroy');
         if (((_ref = this.tourOptions.poststepcallback) != null ? _ref.call(this.$stepEl, this.$stepEl) : void 0) === false) {
           this.finishTour();
           return false;

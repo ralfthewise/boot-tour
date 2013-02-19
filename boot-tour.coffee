@@ -87,14 +87,19 @@ class BootTour
     @$stepTarget.popover('show')
     $('.boot-tour-skip-btn').on('click', @finishTour)
     $('.boot-tour-next-btn').on('click', @runNextStep)
+    @timeout = setTimeout(@runNextStep, @stepOptions.timer) if @stepOptions.timer > 0
     @stepOpen = true
 
   _finishCurrentStep: () ->
     if @stepOpen
+      if @timeout?
+        clearTimeout(@timeout)
+        delete @timeout
       @stepOpen = false
       $('.boot-tour-next-btn').off('click', @runNextStep)
       $('.boot-tour-skip-btn').off('click', @finishTour)
       @$stepTarget.popover('hide')
+      @$stepTarget.popover('destroy')
       if @tourOptions.poststepcallback?.call(@$stepEl, @$stepEl) == false
         @finishTour()
         return false
