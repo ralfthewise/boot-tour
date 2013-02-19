@@ -6,7 +6,7 @@ class BootTour
     placement: 'right'            # top/right/bottom/left
     scrollSpeed: 300              # Page scrolling speed in ms
     timer: 0                      # 0 = off, all other numbers = time(ms)
-    startstep: 0                  # step to start on (can be a callback as well)
+    startstep: null               # integer (0 based) step to start on (can be a callback as well)
     nextbutton: true              # true/false for next button visibility
     previousbutton: false         # true/false for previous button visibility
     skipbutton: false             # true/false for skip button visibility
@@ -16,9 +16,8 @@ class BootTour
     spotlighttransitionsteps: 10  # number of steps to take to perform spotlight transitions
     spotlighttransitiontime: 1    # time for each step
     animation: true               # whether or not to apply animation to tooltip
-    cookieMonster: true           # true/false for whether cookies are used
-    cookieName: 'boottour'        # choose your own cookie name
-    cookieDomain: false           # set to false or yoursite.com
+    cookie: 'boottour'            # choose your own cookie name
+    cookiedomain: false           # set to false or yoursite.com
     container: 'body'             # where the tip be attached if not inline
     pretourcallback: null         # a method to call before the tour starts - return value will be merged with the tour options
     prestepcallback: null         # a method to call before each step - should return an object that will be merged with the current step options
@@ -29,23 +28,36 @@ class BootTour
     @$el = $el
     @tourStarted = false
     @stepOpen = false
-    @tourOptions = $.extend({}, @defaults, @$el.data(), options)
     @$el.on('bootTourDestroyed', @finishTour)
+
+  setOptions: (options) ->
+    @tourOptions = $.extend({}, @defaults, @$el.data(), @tourOptions, options)
 
   startTour: () =>
     @finishTour() if @tourStarted and @tourOptions.allowrestart
 
     unless @tourStarted
-      @tourStarted = true
       if @tourOptions.pretourcallback?
         $.extend(@tourOptions, @tourOptions.pretourcallback.call(@$el, @$el))
       @$stepEls = @$el.find('li')
       @currentStepIndex = @_determineStartIndex()
+      return if @currentStepIndex >= @$stepEls.length
+      @tourStarted = true
+      $(document).on('click.boottour', '.boot-tour-skip-btn', @completeTour)
+      $(document).on('click.boottour', '.boot-tour-previous-btn', @runPreviousStep)
+      $(document).on('click.boottour', '.boot-tour-next-btn', @runNextStep)
       @runNextStep()
+
+  completeTour: () =>
+    @_storeState(@$stepEls.length)
+    @finishTour()
 
   finishTour: () =>
     if @tourStarted
       @tourStarted = false
+      $(document).off('click.boottour', '.boot-tour-skip-btn', @finishTour)
+      $(document).off('click.boottour', '.boot-tour-previous-btn', @runPreviousStep)
+      $(document).off('click.boottour', '.boot-tour-next-btn', @runNextStep)
       @_finishCurrentStep()
       @_hideSpotlight()
       @currentStepIndex = 0
@@ -56,7 +68,7 @@ class BootTour
       @currentStepIndex++ if @_finishCurrentStep()
 
       if @currentStepIndex >= @$stepEls.length
-        @finishTour()
+        @completeTour()
       else
         @_runStep()
 
@@ -89,10 +101,8 @@ class BootTour
       html: true
     )
     @$stepTarget.popover('show')
-    $('.boot-tour-skip-btn').on('click', @finishTour)
-    $('.boot-tour-previous-btn').on('click', @runPreviousStep)
-    $('.boot-tour-next-btn').on('click', @runNextStep)
     @timeout = setTimeout(@runNextStep, @stepOptions.timer) if @stepOptions.timer > 0
+    @_storeState(@currentStepIndex)
     @stepOpen = true
 
   _finishCurrentStep: () ->
@@ -101,9 +111,6 @@ class BootTour
         clearTimeout(@timeout)
         delete @timeout
       @stepOpen = false
-      $('.boot-tour-next-btn').off('click', @runNextStep)
-      $('.boot-tour-previous-btn').off('click', @runPreviousStep)
-      $('.boot-tour-skip-btn').off('click', @finishTour)
       @$stepTarget.popover('hide')
       @$stepTarget.popover('destroy')
       if @tourOptions.poststepcallback?.call(@$stepEl, @$stepEl) == false
@@ -112,6 +119,16 @@ class BootTour
       return true
     else
       return false
+
+  _storeState: () ->
+    if $.cookie? and !!@tourOptions.cookie
+      cookieOptions = {expires: 3650, path: '/'}
+      cookieOptions.domain = @tourOptions.cookiedomain if @tourOptions.cookiedomain
+      $.cookie(@tourOptions.cookie, @currentStepIndex, cookieOptions)
+
+  _readState: () ->
+    if $.cookie? and !!@tourOptions.cookie
+      return $.cookie(@tourOptions.cookie)
 
   _updateSpotlight: () ->
     if @stepOptions.spotlight
@@ -206,7 +223,9 @@ class BootTour
     return $content.html()
 
   _determineStartIndex: () ->
-    return @_generateResult(@tourOptions, 'startstep')
+    index = @_generateResult(@tourOptions, 'startstep')
+    index = (@_readState() or 0) if not index and index isnt 0
+    return index
 
   _generateResult: (object, attribute) ->
     return if typeof object[attribute] == 'function' then object[attribute].call(@$el) else object[attribute]
@@ -228,14 +247,16 @@ class BootTour
   previousButtonTemplate: '<button class="btn btn-primary"><i class="icon-chevron-left icon-white"></i> Previous</button>'
 
 $.fn.extend
-  boottour: (option) ->
+  boottour: (action, option) ->
     @each () ->
       options = typeof option == 'object' and option
+      options ?= typeof action == 'object' and action
       $el = $(@)
       data = $el.data('boottour')
-      $el.data('boottour', (data = new BootTour($el, options))) unless data
-      if typeof option == 'string'
-        switch option
+      $el.data('boottour', (data = new BootTour($el))) unless data
+      data.setOptions(options)
+      if typeof action == 'string'
+        switch action
           when 'start' then data.startTour()
           when 'finish' then data.finishTour()
           when 'next' then data.runNextStep()

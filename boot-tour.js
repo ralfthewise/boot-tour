@@ -11,7 +11,7 @@
       placement: 'right',
       scrollSpeed: 300,
       timer: 0,
-      startstep: 0,
+      startstep: null,
       nextbutton: true,
       previousbutton: false,
       skipbutton: false,
@@ -21,9 +21,8 @@
       spotlighttransitionsteps: 10,
       spotlighttransitiontime: 1,
       animation: true,
-      cookieMonster: true,
-      cookieName: 'boottour',
-      cookieDomain: false,
+      cookie: 'boottour',
+      cookiedomain: false,
       container: 'body',
       pretourcallback: null,
       prestepcallback: null,
@@ -35,30 +34,46 @@
       this.runPreviousStep = __bind(this.runPreviousStep, this);
       this.runNextStep = __bind(this.runNextStep, this);
       this.finishTour = __bind(this.finishTour, this);
+      this.completeTour = __bind(this.completeTour, this);
       this.startTour = __bind(this.startTour, this);      this.$el = $el;
       this.tourStarted = false;
       this.stepOpen = false;
-      this.tourOptions = $.extend({}, this.defaults, this.$el.data(), options);
       this.$el.on('bootTourDestroyed', this.finishTour);
     }
+
+    BootTour.prototype.setOptions = function(options) {
+      return this.tourOptions = $.extend({}, this.defaults, this.$el.data(), this.tourOptions, options);
+    };
 
     BootTour.prototype.startTour = function() {
       if (this.tourStarted && this.tourOptions.allowrestart) this.finishTour();
       if (!this.tourStarted) {
-        this.tourStarted = true;
         if (this.tourOptions.pretourcallback != null) {
           $.extend(this.tourOptions, this.tourOptions.pretourcallback.call(this.$el, this.$el));
         }
         this.$stepEls = this.$el.find('li');
         this.currentStepIndex = this._determineStartIndex();
+        if (this.currentStepIndex >= this.$stepEls.length) return;
+        this.tourStarted = true;
+        $(document).on('click.boottour', '.boot-tour-skip-btn', this.completeTour);
+        $(document).on('click.boottour', '.boot-tour-previous-btn', this.runPreviousStep);
+        $(document).on('click.boottour', '.boot-tour-next-btn', this.runNextStep);
         return this.runNextStep();
       }
+    };
+
+    BootTour.prototype.completeTour = function() {
+      this._storeState(this.$stepEls.length);
+      return this.finishTour();
     };
 
     BootTour.prototype.finishTour = function() {
       var _ref;
       if (this.tourStarted) {
         this.tourStarted = false;
+        $(document).off('click.boottour', '.boot-tour-skip-btn', this.finishTour);
+        $(document).off('click.boottour', '.boot-tour-previous-btn', this.runPreviousStep);
+        $(document).off('click.boottour', '.boot-tour-next-btn', this.runNextStep);
         this._finishCurrentStep();
         this._hideSpotlight();
         this.currentStepIndex = 0;
@@ -70,7 +85,7 @@
       if (this.tourStarted) {
         if (this._finishCurrentStep()) this.currentStepIndex++;
         if (this.currentStepIndex >= this.$stepEls.length) {
-          return this.finishTour();
+          return this.completeTour();
         } else {
           return this._runStep();
         }
@@ -111,12 +126,10 @@
         html: true
       });
       this.$stepTarget.popover('show');
-      $('.boot-tour-skip-btn').on('click', this.finishTour);
-      $('.boot-tour-previous-btn').on('click', this.runPreviousStep);
-      $('.boot-tour-next-btn').on('click', this.runNextStep);
       if (this.stepOptions.timer > 0) {
         this.timeout = setTimeout(this.runNextStep, this.stepOptions.timer);
       }
+      this._storeState(this.currentStepIndex);
       return this.stepOpen = true;
     };
 
@@ -128,9 +141,6 @@
           delete this.timeout;
         }
         this.stepOpen = false;
-        $('.boot-tour-next-btn').off('click', this.runNextStep);
-        $('.boot-tour-previous-btn').off('click', this.runPreviousStep);
-        $('.boot-tour-skip-btn').off('click', this.finishTour);
         this.$stepTarget.popover('hide');
         this.$stepTarget.popover('destroy');
         if (((_ref = this.tourOptions.poststepcallback) != null ? _ref.call(this.$stepEl, this.$stepEl) : void 0) === false) {
@@ -140,6 +150,26 @@
         return true;
       } else {
         return false;
+      }
+    };
+
+    BootTour.prototype._storeState = function() {
+      var cookieOptions;
+      if (($.cookie != null) && !!this.tourOptions.cookie) {
+        cookieOptions = {
+          expires: 3650,
+          path: '/'
+        };
+        if (this.tourOptions.cookiedomain) {
+          cookieOptions.domain = this.tourOptions.cookiedomain;
+        }
+        return $.cookie(this.tourOptions.cookie, this.currentStepIndex, cookieOptions);
+      }
+    };
+
+    BootTour.prototype._readState = function() {
+      if (($.cookie != null) && !!this.tourOptions.cookie) {
+        return $.cookie(this.tourOptions.cookie);
       }
     };
 
@@ -260,7 +290,10 @@
     };
 
     BootTour.prototype._determineStartIndex = function() {
-      return this._generateResult(this.tourOptions, 'startstep');
+      var index;
+      index = this._generateResult(this.tourOptions, 'startstep');
+      if (!index && index !== 0) index = this._readState() || 0;
+      return index;
     };
 
     BootTour.prototype._generateResult = function(object, attribute) {
@@ -286,15 +319,17 @@
   })();
 
   $.fn.extend({
-    boottour: function(option) {
+    boottour: function(action, option) {
       return this.each(function() {
         var $el, data, options;
         options = typeof option === 'object' && option;
+        if (options == null) options = typeof action === 'object' && action;
         $el = $(this);
         data = $el.data('boottour');
-        if (!data) $el.data('boottour', (data = new BootTour($el, options)));
-        if (typeof option === 'string') {
-          switch (option) {
+        if (!data) $el.data('boottour', (data = new BootTour($el)));
+        data.setOptions(options);
+        if (typeof action === 'string') {
+          switch (action) {
             case 'start':
               return data.startTour();
             case 'finish':
