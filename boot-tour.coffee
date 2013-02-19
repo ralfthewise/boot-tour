@@ -8,7 +8,8 @@ class BootTour
     timer: 0                      # 0 = off, all other numbers = time(ms)
     startstep: 0                  # step to start on (can be a callback as well)
     nextbutton: true              # true/false for next button visibility
-    skipbutton: true              # true/false for skip button visibility
+    previousbutton: false         # true/false for previous button visibility
+    skipbutton: false             # true/false for skip button visibility
     spotlight: false              # whether or not to show the spotlight on the element
     spotlightopacity: 0.6         # opacity
     spotlightradius: 250          # radius in pixels
@@ -47,23 +48,26 @@ class BootTour
       @tourStarted = false
       @_finishCurrentStep()
       @_hideSpotlight()
+      @currentStepIndex = 0
       @tourOptions.posttourcallback?.call(@$el, @$el)
 
   runNextStep: () =>
-    @currentStepIndex++ if @_finishCurrentStep()
+    if @tourStarted
+      @currentStepIndex++ if @_finishCurrentStep()
 
-    if @currentStepIndex >= @$stepEls.length
-      @finishTour()
-    else
-      @_runStep()
+      if @currentStepIndex >= @$stepEls.length
+        @finishTour()
+      else
+        @_runStep()
 
   runPreviousStep: () =>
-    @currentStepIndex-- if @_finishCurrentStep()
+    if @tourStarted
+      @currentStepIndex-- if @_finishCurrentStep()
 
-    if @currentStepIndex < 0
-      @finishTour()
-    else
-      @_runStep()
+      if @currentStepIndex < 0
+        @finishTour()
+      else
+        @_runStep()
 
   _runStep: () ->
     @$stepEl = $(@$stepEls[@currentStepIndex])
@@ -86,6 +90,7 @@ class BootTour
     )
     @$stepTarget.popover('show')
     $('.boot-tour-skip-btn').on('click', @finishTour)
+    $('.boot-tour-previous-btn').on('click', @runPreviousStep)
     $('.boot-tour-next-btn').on('click', @runNextStep)
     @timeout = setTimeout(@runNextStep, @stepOptions.timer) if @stepOptions.timer > 0
     @stepOpen = true
@@ -97,6 +102,7 @@ class BootTour
         delete @timeout
       @stepOpen = false
       $('.boot-tour-next-btn').off('click', @runNextStep)
+      $('.boot-tour-previous-btn').off('click', @runPreviousStep)
       $('.boot-tour-skip-btn').off('click', @finishTour)
       @$stepTarget.popover('hide')
       @$stepTarget.popover('destroy')
@@ -193,6 +199,9 @@ class BootTour
       else
         doneHtml = @doneButtonTemplate
         $content.find('.boot-tour-next-btn').html(doneHtml)
+    if @stepOptions.previousbutton and @currentStepIndex > 0
+      previousHtml = @previousButtonTemplate
+      $content.find('.boot-tour-previous-btn').html(previousHtml)
 
     return $content.html()
 
@@ -207,13 +216,16 @@ class BootTour
     <div>
       <p class="boot-tour-main-content"></p>
       <p style="text-align: right">
-        <span class="boot-tour-skip-btn"></span><span class="boot-tour-next-btn"></span>
+        <span class="boot-tour-skip-btn"></span>
+        <span class="boot-tour-previous-btn"></span>
+        <span class="boot-tour-next-btn"></span>
       </p>
     </div>
     """
   skipButtonTemplate: '<button class="btn btn-danger"><i class="icon-remove-circle icon-white"></i> Skip Tour</button>'
   nextButtonTemplate: '<button class="btn btn-primary">Next <i class="icon-chevron-right icon-white"></i></button>'
   doneButtonTemplate: '<button class="btn btn-primary"><i class="icon-ok icon-white"></i> Done</button>'
+  previousButtonTemplate: '<button class="btn btn-primary"><i class="icon-chevron-left icon-white"></i> Previous</button>'
 
 $.fn.extend
   boottour: (option) ->

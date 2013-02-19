@@ -13,7 +13,8 @@
       timer: 0,
       startstep: 0,
       nextbutton: true,
-      skipbutton: true,
+      previousbutton: false,
+      skipbutton: false,
       spotlight: false,
       spotlightopacity: 0.6,
       spotlightradius: 250,
@@ -60,25 +61,30 @@
         this.tourStarted = false;
         this._finishCurrentStep();
         this._hideSpotlight();
+        this.currentStepIndex = 0;
         return (_ref = this.tourOptions.posttourcallback) != null ? _ref.call(this.$el, this.$el) : void 0;
       }
     };
 
     BootTour.prototype.runNextStep = function() {
-      if (this._finishCurrentStep()) this.currentStepIndex++;
-      if (this.currentStepIndex >= this.$stepEls.length) {
-        return this.finishTour();
-      } else {
-        return this._runStep();
+      if (this.tourStarted) {
+        if (this._finishCurrentStep()) this.currentStepIndex++;
+        if (this.currentStepIndex >= this.$stepEls.length) {
+          return this.finishTour();
+        } else {
+          return this._runStep();
+        }
       }
     };
 
     BootTour.prototype.runPreviousStep = function() {
-      if (this._finishCurrentStep()) this.currentStepIndex--;
-      if (this.currentStepIndex < 0) {
-        return this.finishTour();
-      } else {
-        return this._runStep();
+      if (this.tourStarted) {
+        if (this._finishCurrentStep()) this.currentStepIndex--;
+        if (this.currentStepIndex < 0) {
+          return this.finishTour();
+        } else {
+          return this._runStep();
+        }
       }
     };
 
@@ -106,6 +112,7 @@
       });
       this.$stepTarget.popover('show');
       $('.boot-tour-skip-btn').on('click', this.finishTour);
+      $('.boot-tour-previous-btn').on('click', this.runPreviousStep);
       $('.boot-tour-next-btn').on('click', this.runNextStep);
       if (this.stepOptions.timer > 0) {
         this.timeout = setTimeout(this.runNextStep, this.stepOptions.timer);
@@ -122,6 +129,7 @@
         }
         this.stepOpen = false;
         $('.boot-tour-next-btn').off('click', this.runNextStep);
+        $('.boot-tour-previous-btn').off('click', this.runPreviousStep);
         $('.boot-tour-skip-btn').off('click', this.finishTour);
         this.$stepTarget.popover('hide');
         this.$stepTarget.popover('destroy');
@@ -228,7 +236,7 @@
     };
 
     BootTour.prototype._generateStepContent = function() {
-      var $content, doneHtml, nextHtml, skipHtml;
+      var $content, doneHtml, nextHtml, previousHtml, skipHtml;
       $content = $(this.tooltipTemplate);
       $content.find('.boot-tour-main-content').html(this.$stepEl.html());
       if (this.stepOptions.skipbutton) {
@@ -243,6 +251,10 @@
           doneHtml = this.doneButtonTemplate;
           $content.find('.boot-tour-next-btn').html(doneHtml);
         }
+      }
+      if (this.stepOptions.previousbutton && this.currentStepIndex > 0) {
+        previousHtml = this.previousButtonTemplate;
+        $content.find('.boot-tour-previous-btn').html(previousHtml);
       }
       return $content.html();
     };
@@ -259,13 +271,15 @@
       }
     };
 
-    BootTour.prototype.tooltipTemplate = "<div>\n  <p class=\"boot-tour-main-content\"></p>\n  <p style=\"text-align: right\">\n    <span class=\"boot-tour-skip-btn\"></span><span class=\"boot-tour-next-btn\"></span>\n  </p>\n</div>";
+    BootTour.prototype.tooltipTemplate = "<div>\n  <p class=\"boot-tour-main-content\"></p>\n  <p style=\"text-align: right\">\n    <span class=\"boot-tour-skip-btn\"></span>\n    <span class=\"boot-tour-previous-btn\"></span>\n    <span class=\"boot-tour-next-btn\"></span>\n  </p>\n</div>";
 
     BootTour.prototype.skipButtonTemplate = '<button class="btn btn-danger"><i class="icon-remove-circle icon-white"></i> Skip Tour</button>';
 
     BootTour.prototype.nextButtonTemplate = '<button class="btn btn-primary">Next <i class="icon-chevron-right icon-white"></i></button>';
 
     BootTour.prototype.doneButtonTemplate = '<button class="btn btn-primary"><i class="icon-ok icon-white"></i> Done</button>';
+
+    BootTour.prototype.previousButtonTemplate = '<button class="btn btn-primary"><i class="icon-chevron-left icon-white"></i> Previous</button>';
 
     return BootTour;
 
