@@ -4,6 +4,7 @@ class BootTour
   defaults:
     allowrestart: false           # will tour restart if currently running tour isn't finished
     placement: 'right'            # top/right/bottom/left
+    offset: 0                     # offset (in pixels) tooltip is shifted from element it is attached to
     scrollSpeed: 300              # Page scrolling speed in ms
     timer: 0                      # 0 = off, all other numbers = time(ms)
     startstep: null               # integer (0 based) step to start on (can be a callback as well)
@@ -101,9 +102,20 @@ class BootTour
       html: true
     )
     @$stepTarget.popover('show')
+    @_setTooltipOffset()
     @timeout = setTimeout(@runNextStep, @stepOptions.timer) if @stepOptions.timer > 0
     @_storeState(@currentStepIndex)
     @stepOpen = true
+
+  _setTooltipOffset: () ->
+    if @stepOptions.offset != 0
+      offsetOptions = {}
+      switch @stepOptions.placement
+        when 'top' then offsetOptions['margin-top'] = -@stepOptions.offset
+        when 'right' then offsetOptions['margin-left'] = @stepOptions.offset
+        when 'bottom' then offsetOptions['margin-top'] = @stepOptions.offset
+        when 'left' then offsetOptions['margin-left'] = -@stepOptions.offset
+      $(".popover.#{@stepOptions.placement}").css(offsetOptions)
 
   _finishCurrentStep: () ->
     if @stepOpen

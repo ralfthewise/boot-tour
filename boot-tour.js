@@ -9,6 +9,7 @@
     BootTour.prototype.defaults = {
       allowrestart: false,
       placement: 'right',
+      offset: 0,
       scrollSpeed: 300,
       timer: 0,
       startstep: null,
@@ -126,11 +127,33 @@
         html: true
       });
       this.$stepTarget.popover('show');
+      this._setTooltipOffset();
       if (this.stepOptions.timer > 0) {
         this.timeout = setTimeout(this.runNextStep, this.stepOptions.timer);
       }
       this._storeState(this.currentStepIndex);
       return this.stepOpen = true;
+    };
+
+    BootTour.prototype._setTooltipOffset = function() {
+      var offsetOptions;
+      if (this.stepOptions.offset !== 0) {
+        offsetOptions = {};
+        switch (this.stepOptions.placement) {
+          case 'top':
+            offsetOptions['margin-top'] = -this.stepOptions.offset;
+            break;
+          case 'right':
+            offsetOptions['margin-left'] = this.stepOptions.offset;
+            break;
+          case 'bottom':
+            offsetOptions['margin-top'] = this.stepOptions.offset;
+            break;
+          case 'left':
+            offsetOptions['margin-left'] = -this.stepOptions.offset;
+        }
+        return $(".popover." + this.stepOptions.placement).css(offsetOptions);
+      }
     };
 
     BootTour.prototype._finishCurrentStep = function() {
