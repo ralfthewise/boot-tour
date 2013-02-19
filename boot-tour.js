@@ -11,6 +11,7 @@
       placement: 'right',
       scrollSpeed: 300,
       timer: 0,
+      startstep: 0,
       nextbutton: true,
       skipbutton: true,
       spotlight: false,
@@ -104,7 +105,8 @@
         html: true
       });
       this.$stepTarget.popover('show');
-      $('.tour-tip-next').on('click', this.runNextStep);
+      $('.boot-tour-skip-btn').on('click', this.finishTour);
+      $('.boot-tour-next-btn').on('click', this.runNextStep);
       return this.stepOpen = true;
     };
 
@@ -112,7 +114,8 @@
       var _ref;
       if (this.stepOpen) {
         this.stepOpen = false;
-        $('.tour-tip-next').off('click', this.runNextStep);
+        $('.boot-tour-next-btn').off('click', this.runNextStep);
+        $('.boot-tour-skip-btn').off('click', this.finishTour);
         this.$stepTarget.popover('hide');
         if (((_ref = this.tourOptions.poststepcallback) != null ? _ref.call(this.$stepEl, this.$stepEl) : void 0) === false) {
           this.finishTour();
@@ -216,13 +219,45 @@
       return $('.boot-tour-spotlight').remove();
     };
 
-    BootTour.prototype._determineStartIndex = function() {
-      return 0;
+    BootTour.prototype._generateStepContent = function() {
+      var $content, doneHtml, nextHtml, skipHtml;
+      $content = $(this.tooltipTemplate);
+      $content.find('.boot-tour-main-content').html(this.$stepEl.html());
+      if (this.stepOptions.skipbutton) {
+        skipHtml = this.skipButtonTemplate;
+        $content.find('.boot-tour-skip-btn').html(skipHtml);
+      }
+      if (this.stepOptions.nextbutton) {
+        if ((this.currentStepIndex + 1) < this.$stepEls.length) {
+          nextHtml = this.nextButtonTemplate;
+          $content.find('.boot-tour-next-btn').html(nextHtml);
+        } else {
+          doneHtml = this.doneButtonTemplate;
+          $content.find('.boot-tour-next-btn').html(doneHtml);
+        }
+      }
+      return $content.html();
     };
 
-    BootTour.prototype._generateStepContent = function() {
-      return "<p>" + (this.$stepEl.html()) + "</p>\n<p style=\"text-align: right\">\n  <button class=\"tour-tip-next btn btn-primary\">\n    " + ((this.currentStepIndex + 1) < this.$stepEls.length ? 'Next <i class="icon-chevron-right icon-white"></i>' : '<i class="icon-ok icon-white"></i> Done') + "\n  </button>\n</p>";
+    BootTour.prototype._determineStartIndex = function() {
+      return this._generateResult(this.tourOptions, 'startstep');
     };
+
+    BootTour.prototype._generateResult = function(object, attribute) {
+      if (typeof object[attribute] === 'function') {
+        return object[attribute].call(this.$el);
+      } else {
+        return object[attribute];
+      }
+    };
+
+    BootTour.prototype.tooltipTemplate = "<div>\n  <p class=\"boot-tour-main-content\"></p>\n  <p style=\"text-align: right\">\n    <span class=\"boot-tour-skip-btn\"></span><span class=\"boot-tour-next-btn\"></span>\n  </p>\n</div>";
+
+    BootTour.prototype.skipButtonTemplate = '<button class="btn btn-danger"><i class="icon-remove-circle icon-white"></i> Skip Tour</button>';
+
+    BootTour.prototype.nextButtonTemplate = '<button class="btn btn-primary">Next <i class="icon-chevron-right icon-white"></i></button>';
+
+    BootTour.prototype.doneButtonTemplate = '<button class="btn btn-primary"><i class="icon-ok icon-white"></i> Done</button>';
 
     return BootTour;
 

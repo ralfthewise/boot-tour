@@ -6,13 +6,14 @@ class BootTour
     placement: 'right'            # top/right/bottom/left
     scrollSpeed: 300              # Page scrolling speed in ms
     timer: 0                      # 0 = off, all other numbers = time(ms)
+    startstep: 0                  # step to start on (can be a callback as well)
     nextbutton: true              # true/false for next button visibility
     skipbutton: true              # true/false for skip button visibility
     spotlight: false              # whether or not to show the spotlight on the element
     spotlightopacity: 0.6         # opacity
     spotlightradius: 250          # radius in pixels
     spotlighttransitionsteps: 10  # number of steps to take to perform spotlight transitions
-    spotlighttransitiontime: 1   # time for each step
+    spotlighttransitiontime: 1    # time for each step
     animation: true               # whether or not to apply animation to tooltip
     cookieMonster: true           # true/false for whether cookies are used
     cookieName: 'boottour'        # choose your own cookie name
@@ -84,13 +85,15 @@ class BootTour
       html: true
     )
     @$stepTarget.popover('show')
-    $('.tour-tip-next').on('click', @runNextStep)
+    $('.boot-tour-skip-btn').on('click', @finishTour)
+    $('.boot-tour-next-btn').on('click', @runNextStep)
     @stepOpen = true
 
   _finishCurrentStep: () ->
     if @stepOpen
       @stepOpen = false
-      $('.tour-tip-next').off('click', @runNextStep)
+      $('.boot-tour-next-btn').off('click', @runNextStep)
+      $('.boot-tour-skip-btn').off('click', @finishTour)
       @$stepTarget.popover('hide')
       if @tourOptions.poststepcallback?.call(@$stepEl, @$stepEl) == false
         @finishTour()
@@ -172,18 +175,40 @@ class BootTour
   _hideSpotlight: () ->
     $('.boot-tour-spotlight').remove()
 
-  _determineStartIndex: () ->
-    0
-
   _generateStepContent: () ->
-    return """
-      <p>#{@$stepEl.html()}</p>
+    $content = $(@tooltipTemplate)
+    $content.find('.boot-tour-main-content').html(@$stepEl.html())
+    if @stepOptions.skipbutton
+      skipHtml = @skipButtonTemplate
+      $content.find('.boot-tour-skip-btn').html(skipHtml)
+    if @stepOptions.nextbutton
+      if (@currentStepIndex + 1) < @$stepEls.length
+        nextHtml = @nextButtonTemplate
+        $content.find('.boot-tour-next-btn').html(nextHtml)
+      else
+        doneHtml = @doneButtonTemplate
+        $content.find('.boot-tour-next-btn').html(doneHtml)
+
+    return $content.html()
+
+  _determineStartIndex: () ->
+    return @_generateResult(@tourOptions, 'startstep')
+
+  _generateResult: (object, attribute) ->
+    return if typeof object[attribute] == 'function' then object[attribute].call(@$el) else object[attribute]
+
+  #templates
+  tooltipTemplate: """
+    <div>
+      <p class="boot-tour-main-content"></p>
       <p style="text-align: right">
-        <button class="tour-tip-next btn btn-primary">
-          #{if (@currentStepIndex + 1) < @$stepEls.length then 'Next <i class="icon-chevron-right icon-white"></i>' else '<i class="icon-ok icon-white"></i> Done'}
-        </button>
+        <span class="boot-tour-skip-btn"></span><span class="boot-tour-next-btn"></span>
       </p>
+    </div>
     """
+  skipButtonTemplate: '<button class="btn btn-danger"><i class="icon-remove-circle icon-white"></i> Skip Tour</button>'
+  nextButtonTemplate: '<button class="btn btn-primary">Next <i class="icon-chevron-right icon-white"></i></button>'
+  doneButtonTemplate: '<button class="btn btn-primary"><i class="icon-ok icon-white"></i> Done</button>'
 
 $.fn.extend
   boottour: (option) ->
